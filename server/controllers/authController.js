@@ -24,20 +24,25 @@ module.exports = {
 
     login: async (req, res) => {
         const {username, password} = req.body
-        let db = req.app.get('db');
-        let result = await db.get_user([username]);
-        let foundUser = result[0]
-        if(!foundUser){
+        const foundUser = await req.app.get('db').get_user([username]);
+        const user = foundUser[0]
+        if(!user){
             return res.status(401).send('User not found. Please register as a new user before logging in.')
         }
-        let isAuthenticated = bcrypt.compareSync(password, user.hash)
+        const isAuthenticated = bcrypt.compareSync(password, user.hash)
         if (!isAuthenticated){
             res.status(403).send('Incorrect password')
-        }
+        } 
         req.session.user = {
-            username: foundUser[0].username,
-            password: foundUser[0].password
+            isAdmin: user.is_admin,
+            id: user.id,
+            username: user.username
         }
-        res.status(200).send(req.session.user)
+        return res.status(200).send(req.session.user)
+    },
+
+    logout: async (req, res) => {
+        req.session.destroy();
+        res.sendStatus(200);
     }
 }
